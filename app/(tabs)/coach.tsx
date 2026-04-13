@@ -8,7 +8,7 @@ import { CoachingCard } from '@/components/coach/CoachingCard';
 import { Header } from '@/components/coach/Header';
 import { presets, PresetName } from '@/engine/mockMetrics';
 import { getCoachingTip, getStatusLine } from '@/engine/rules';
-import { saveSession } from '@/storage/sessions';
+import { getSessions, saveSession } from '@/storage/sessions';
 
 const PRESET_BUTTONS: { label: string; key: PresetName }[] = [
   { label: 'Posture', key: 'postureLow' },
@@ -38,6 +38,11 @@ export default function CoachScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
 
+      // Read previous sessions BEFORE saving so we can compare scores
+      const previousSessions = await getSessions();
+      const prevScore = previousSessions[0]?.presenceScore ?? null;
+      const trend = prevScore !== null ? metrics.presenceScore - prevScore : null;
+
       // Persist the session locally before navigating
       await saveSession({
         id: Date.now().toString(),
@@ -61,6 +66,8 @@ export default function CoachScreen() {
           tip: coachingTip,
           statusLine,
           source: 'capture',
+          // trend is a signed number string ("5", "-3", "0") or "" for first session
+          trend: trend !== null ? String(trend) : '',
         },
       });
     } finally {

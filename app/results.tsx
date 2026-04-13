@@ -11,6 +11,7 @@ type ResultsParams = {
   tip: string;
   statusLine: string;
   source: 'capture' | 'history'; // who opened this screen
+  trend: string; // signed number string like "5" or "-3", or "" for first session
 };
 
 export default function ResultsScreen() {
@@ -20,6 +21,9 @@ export default function ResultsScreen() {
   const postureScore = parseInt(params.postureScore, 10);
   const lightingScore = parseInt(params.lightingScore, 10);
   const fromCapture = params.source === 'capture';
+
+  // trend: a number if we have a previous session to compare against, null if first
+  const trend = params.trend !== '' ? parseInt(params.trend, 10) : null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -55,6 +59,11 @@ export default function ResultsScreen() {
           <ScoreCard label="Posture" value={postureScore} dim={postureScore < 70} />
           <ScoreCard label="Lighting" value={lightingScore} dim={lightingScore < 70} />
         </View>
+
+        {/* Trend line — only shown on fresh captures */}
+        {fromCapture && (
+          <TrendLine trend={trend} />
+        )}
 
         {/* Coaching tip */}
         <View style={styles.tipCard}>
@@ -98,6 +107,56 @@ export default function ResultsScreen() {
     </SafeAreaView>
   );
 }
+
+// Shows "+5 vs last session", "-3 vs last session", or "First session"
+function TrendLine({ trend }: { trend: number | null }) {
+  if (trend === null) {
+    return (
+      <View style={trendStyles.row}>
+        <Text style={trendStyles.neutral}>First session — nothing to compare yet</Text>
+      </View>
+    );
+  }
+
+  const isUp = trend > 0;
+  const isDown = trend < 0;
+  const sign = isUp ? '+' : '';
+  const arrow = isUp ? '↑' : isDown ? '↓' : '→';
+  const textStyle = isUp ? trendStyles.up : isDown ? trendStyles.down : trendStyles.neutral;
+
+  return (
+    <View style={trendStyles.row}>
+      <Text style={textStyle}>
+        {arrow}  {sign}{trend} vs last session
+      </Text>
+    </View>
+  );
+}
+
+const trendStyles = StyleSheet.create({
+  row: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  up: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#34C759',
+    letterSpacing: 0.2,
+  },
+  down: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF6B6B',
+    letterSpacing: 0.2,
+  },
+  neutral: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#636366',
+    letterSpacing: 0.2,
+  },
+});
 
 function ScoreCard({ label, value, dim = false }: { label: string; value: number; dim?: boolean }) {
   return (
