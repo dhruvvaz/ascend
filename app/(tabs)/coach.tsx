@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { router } from 'expo-router';
 
 import { CoachingCard } from '@/components/coach/CoachingCard';
 import { Header } from '@/components/coach/Header';
@@ -21,10 +23,34 @@ const CAMERA_LABELS: Record<PresetName, string> = {
 
 export default function CoachScreen() {
   const [activePreset, setActivePreset] = useState<PresetName>('postureLow');
+  const [permission, requestPermission] = useCameraPermissions();
+  const [isCapturing, setIsCapturing] = useState(false);
+  const cameraRef = useRef<CameraView>(null);
 
   const metrics = presets[activePreset];
   const coachingTip = getCoachingTip(metrics);
   const statusLine = getStatusLine(metrics);
+
+  async function handleCapture() {
+    if (!cameraRef.current || isCapturing) return;
+    setIsCapturing(true);
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      router.push({
+        pathname: '/results',
+        params: {
+          imageUri: photo.uri,
+          presenceScore: metrics.presenceScore,
+          postureScore: metrics.postureScore,
+          lightingScore: metrics.lightingScore,
+          tip: coachingTip,
+          statusLine,
+        },
+      });
+    } finally {
+      setIsCapturing(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -38,14 +64,27 @@ export default function CoachScreen() {
 
         {/* Camera area */}
         <View style={styles.cameraArea}>
-          {/* Live badge */}
-          <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
-          </View>
+          {permission?.granted ? (
+            // Camera is allowed — show the live feed with overlays on top
+            <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front">
+              {/* Live badge */}
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
 
-          {/* Centered preset label */}
-          <Text style={styles.cameraLabel}>{CAMERA_LABELS[activePreset]}</Text>
+              {/* Centered preset label */}
+              <View style={styles.cameraLabelContainer}>
+                <Text style={styles.cameraLabel}>{CAMERA_LABELS[activePreset]}</Text>
+              </View>
+            </CameraView>
+          ) : (
+            // Permission not granted yet — show a prompt inside the camera area
+            <CameraPermissionPrompt
+              canAskAgain={permission?.canAskAgain ?? true}
+              onRequest={requestPermission}
+            />
+          )}
         </View>
 
         {/* Metric row */}
@@ -73,8 +112,49 @@ export default function CoachScreen() {
           ))}
         </View>
 
+        {/* Capture button */}
+        <TouchableOpacity
+          style={[styles.captureButton, (!permission?.granted || isCapturing) && styles.captureButtonDisabled]}
+          onPress={handleCapture}
+          activeOpacity={0.8}
+          disabled={!permission?.granted || isCapturing}
+        >
+          <Text style={styles.captureLabel}>
+            {isCapturing ? 'Capturing…' : 'Capture Frame'}
+          </Text>
+        </TouchableOpacity>
+
       </View>
     </SafeAreaView>
+  );
+}
+
+// Shown inside the camera area when the user has not granted permission
+function CameraPermissionPrompt({
+  canAskAgain,
+  onRequest,
+}: {
+  canAskAgain: boolean;
+  onRequest: () => void;
+}) {
+  return (
+    <View style={styles.permissionContainer}>
+      <Text style={styles.permissionTitle}>Camera Access Needed</Text>
+      {canAskAgain ? (
+        <>
+          <Text style={styles.permissionBody}>
+            Ascend uses your camera to give live coaching feedback.
+          </Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={onRequest} activeOpacity={0.7}>
+            <Text style={styles.permissionButtonText}>Enable Camera</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <Text style={styles.permissionBody}>
+          Camera access was denied. Enable it in your device Settings to use Live Coach.
+        </Text>
+      )}
+    </View>
   );
 }
 
@@ -115,8 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0D0D0D',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',  // clips the CameraView to the rounded corners
   },
   liveBadge: {
     position: 'absolute',
@@ -125,7 +204,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -141,14 +220,52 @@ const styles = StyleSheet.create({
   liveText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: '#FFFFFF',
     letterSpacing: 1.5,
+  },
+  cameraLabelContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.18)',
+    color: 'rgba(255,255,255,0.30)',
     letterSpacing: 1,
+  },
+
+  // Permission prompt
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    gap: 14,
+  },
+  permissionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  permissionBody: {
+    fontSize: 14,
+    color: '#8E8E93',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  permissionButton: {
+    marginTop: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+  },
+  permissionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
   },
 
   // Metric row
@@ -216,5 +333,24 @@ const styles = StyleSheet.create({
   },
   presetLabelActive: {
     color: '#000000',
+  },
+
+  // Capture button
+  captureButton: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  captureButtonDisabled: {
+    backgroundColor: '#2C2C2E',
+  },
+  captureLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: 0.2,
   },
 });
