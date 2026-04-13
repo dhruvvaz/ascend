@@ -8,6 +8,7 @@ import { CoachingCard } from '@/components/coach/CoachingCard';
 import { Header } from '@/components/coach/Header';
 import { presets, PresetName } from '@/engine/mockMetrics';
 import { getCoachingTip, getStatusLine } from '@/engine/rules';
+import { saveSession } from '@/storage/sessions';
 
 const PRESET_BUTTONS: { label: string; key: PresetName }[] = [
   { label: 'Posture', key: 'postureLow' },
@@ -36,6 +37,20 @@ export default function CoachScreen() {
     setIsCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+
+      // Persist the session locally before navigating
+      await saveSession({
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        imageUri: photo.uri,
+        presenceScore: metrics.presenceScore,
+        postureScore: metrics.postureScore,
+        lightingScore: metrics.lightingScore,
+        coachingTip,
+        statusLine,
+        presetName: activePreset,
+      });
+
       router.push({
         pathname: '/results',
         params: {
@@ -45,6 +60,7 @@ export default function CoachScreen() {
           lightingScore: metrics.lightingScore,
           tip: coachingTip,
           statusLine,
+          source: 'capture',
         },
       });
     } finally {

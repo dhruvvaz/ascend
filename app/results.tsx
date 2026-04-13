@@ -2,7 +2,7 @@ import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
-// All params arrive as strings from the URL — we parse numbers where needed
+// All params arrive as strings from the URL — numbers are parsed below
 type ResultsParams = {
   imageUri: string;
   presenceScore: string;
@@ -10,6 +10,7 @@ type ResultsParams = {
   lightingScore: string;
   tip: string;
   statusLine: string;
+  source: 'capture' | 'history'; // who opened this screen
 };
 
 export default function ResultsScreen() {
@@ -18,6 +19,7 @@ export default function ResultsScreen() {
   const presenceScore = parseInt(params.presenceScore, 10);
   const postureScore = parseInt(params.postureScore, 10);
   const lightingScore = parseInt(params.lightingScore, 10);
+  const fromCapture = params.source === 'capture';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -28,7 +30,15 @@ export default function ResultsScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Your Look</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>Your Look</Text>
+            {/* Show "Saved" only when this is a fresh capture */}
+            {fromCapture && (
+              <View style={styles.savedBadge}>
+                <Text style={styles.savedText}>Saved</Text>
+              </View>
+            )}
+          </View>
           <Text style={styles.subtitle}>{params.statusLine}</Text>
         </View>
 
@@ -52,24 +62,37 @@ export default function ResultsScreen() {
           <Text style={styles.tipText}>{params.tip}</Text>
         </View>
 
-        {/* Action buttons */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={styles.retakeButton}
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.retakeLabel}>Retake</Text>
-          </TouchableOpacity>
+        {/* Buttons — differ based on where we came from */}
+        {fromCapture ? (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.secondaryLabel}>Retake</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.doneButton}
-            onPress={() => router.replace('/(tabs)')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.doneLabel}>Done</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.replace('/(tabs)')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryLabel}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // Came from history — just go back
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.back()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryLabel}>Back</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -100,17 +123,36 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.3,
   },
+  savedBadge: {
+    backgroundColor: 'rgba(52,199,89,0.15)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(52,199,89,0.3)',
+  },
+  savedText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#34C759',
+    letterSpacing: 0.5,
+  },
   subtitle: {
     fontSize: 14,
     fontWeight: '500',
     color: '#8E8E93',
-    marginTop: 4,
+    marginTop: 6,
   },
 
   // Image
@@ -190,7 +232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 20,
   },
-  retakeButton: {
+  secondaryButton: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 15,
@@ -199,19 +241,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
-  retakeLabel: {
+  secondaryLabel: {
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  doneButton: {
+  primaryButton: {
     flex: 2,
     alignItems: 'center',
     paddingVertical: 15,
     borderRadius: 16,
     backgroundColor: '#FFFFFF',
   },
-  doneLabel: {
+  primaryLabel: {
     fontSize: 15,
     fontWeight: '700',
     color: '#000000',
