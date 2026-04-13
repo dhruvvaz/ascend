@@ -3,9 +3,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CoachingCard } from '@/components/coach/CoachingCard';
 import { Header } from '@/components/coach/Header';
+import { mockMetrics } from '@/engine/mockMetrics';
+import { getCoachingTip } from '@/engine/rules';
 
-const PRESENCE_SCORE = 72;
-const COACHING_TIP = 'Straighten your posture and keep your chin parallel to the floor.';
+const PRESENCE_SCORE = mockMetrics.presenceScore;
+const COACHING_TIP = getCoachingTip(mockMetrics);
 
 export default function CoachScreen() {
   return (
