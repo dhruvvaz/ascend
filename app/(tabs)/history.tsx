@@ -5,7 +5,8 @@ import { router, useFocusEffect } from 'expo-router';
 
 import { getSessions, Session } from '@/storage/sessions';
 
-// Formats a Unix timestamp into something readable like "Apr 13, 2:45 PM"
+const ACCENT = '#FFB800';
+
 function formatTimestamp(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString('en-US', {
     month: 'short',
@@ -18,8 +19,6 @@ function formatTimestamp(timestamp: number): string {
 export default function HistoryScreen() {
   const [sessions, setSessions] = useState<Session[]>([]);
 
-  // Reload the list every time this tab comes into focus
-  // so new captures show up without needing a full app restart
   useFocusEffect(
     useCallback(() => {
       getSessions().then(setSessions);
@@ -56,20 +55,13 @@ export default function HistoryScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Nothing here yet</Text>
           <Text style={styles.emptyBody}>
-            Capture a frame in the Live Coach tab to save your first session.
+            Capture a frame in the Coach tab to save your first session.
           </Text>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {sessions.map((session) => (
-            <SessionItem
-              key={session.id}
-              session={session}
-              onPress={() => openSession(session)}
-            />
+            <SessionItem key={session.id} session={session} onPress={() => openSession(session)} />
           ))}
         </ScrollView>
       )}
@@ -77,65 +69,43 @@ export default function HistoryScreen() {
   );
 }
 
-function SessionItem({
-  session,
-  onPress,
-}: {
-  session: Session;
-  onPress: () => void;
-}) {
+function SessionItem({ session, onPress }: { session: Session; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.75}>
-      {/* Thumbnail */}
-      <Image
-        source={{ uri: session.imageUri }}
-        style={styles.thumbnail}
-        resizeMode="cover"
-      />
-
-      {/* Text content */}
+      <Image source={{ uri: session.imageUri }} style={styles.thumbnail} resizeMode="cover" />
       <View style={styles.itemBody}>
-        <Text style={styles.itemStatusLine} numberOfLines={1}>
-          {session.statusLine}
-        </Text>
+        <Text style={styles.itemStatusLine} numberOfLines={1}>{session.statusLine}</Text>
         <Text style={styles.itemTimestamp}>{formatTimestamp(session.timestamp)}</Text>
       </View>
-
-      {/* Presence score badge */}
       <View style={styles.scoreBadge}>
         <Text style={styles.scoreValue}>{session.presenceScore}</Text>
-        <Text style={styles.scoreLabel}>Presence</Text>
+        <Text style={styles.scoreLabel}>score</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
+  safeArea: { flex: 1, backgroundColor: '#000' },
 
-  // Page header
   header: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
+    fontSize: 34,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#636366',
+    color: '#444',
     marginTop: 4,
   },
 
-  // Empty state
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -145,39 +115,35 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFF',
     textAlign: 'center',
   },
   emptyBody: {
     fontSize: 14,
-    color: '#636366',
+    color: '#444',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
   },
 
-  // Session list
   list: {
     paddingHorizontal: 16,
     paddingBottom: 32,
     gap: 10,
   },
 
-  // Session item
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#141414',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: '#111',
+    borderRadius: 22,
     overflow: 'hidden',
   },
   thumbnail: {
-    width: 72,
-    height: 72,
-    backgroundColor: '#0D0D0D',
+    width: 82,
+    height: 82,
+    backgroundColor: '#0A0A0A',
   },
   itemBody: {
     flex: 1,
@@ -187,28 +153,29 @@ const styles = StyleSheet.create({
   itemStatusLine: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFF',
   },
   itemTimestamp: {
     fontSize: 12,
-    color: '#636366',
+    color: '#444',
   },
+
   scoreBadge: {
     alignItems: 'center',
-    paddingRight: 16,
+    paddingRight: 18,
     paddingLeft: 8,
   },
   scoreValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    color: ACCENT,
   },
   scoreLabel: {
     fontSize: 9,
     fontWeight: '600',
-    color: '#636366',
+    color: 'rgba(255,184,0,0.4)',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginTop: 2,
+    marginTop: 1,
   },
 });

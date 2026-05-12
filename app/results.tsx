@@ -2,7 +2,8 @@ import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
-// All params arrive as strings from the URL — numbers are parsed below
+const ACCENT = '#FFB800';
+
 type ResultsParams = {
   imageUri: string;
   presenceScore: string;
@@ -10,68 +11,59 @@ type ResultsParams = {
   lightingScore: string;
   tip: string;
   statusLine: string;
-  source: 'capture' | 'history'; // who opened this screen
-  trend: string; // signed number string like "5" or "-3", or "" for first session
+  source: 'capture' | 'history';
+  trend: string;
 };
 
 export default function ResultsScreen() {
   const params = useLocalSearchParams<ResultsParams>();
-
   const presenceScore = parseInt(params.presenceScore, 10);
   const postureScore = parseInt(params.postureScore, 10);
   const lightingScore = parseInt(params.lightingScore, 10);
   const fromCapture = params.source === 'capture';
-
-  // trend: a number if we have a previous session to compare against, null if first
   const trend = params.trend !== '' ? parseInt(params.trend, 10) : null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>Your Look</Text>
-            {/* Show "Saved" only when this is a fresh capture */}
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.eyebrow}>Your Look</Text>
+              <Text style={styles.statusLine} numberOfLines={2}>{params.statusLine}</Text>
+            </View>
             {fromCapture && (
               <View style={styles.savedBadge}>
-                <Text style={styles.savedText}>Saved</Text>
+                <Text style={styles.savedText}>Saved ✓</Text>
               </View>
             )}
           </View>
-          <Text style={styles.subtitle}>{params.statusLine}</Text>
         </View>
 
-        {/* Captured image */}
+        <View style={styles.heroScore}>
+          <Text style={styles.heroScoreValue}>{presenceScore}</Text>
+          <Text style={styles.heroScoreLabel}>presence score</Text>
+        </View>
+
         <Image
           source={{ uri: params.imageUri }}
           style={styles.image}
           resizeMode="cover"
         />
 
-        {/* Score row */}
+        {fromCapture && <TrendLine trend={trend} />}
+
         <View style={styles.scoreRow}>
-          <ScoreCard label="Presence" value={presenceScore} />
           <ScoreCard label="Posture" value={postureScore} dim={postureScore < 70} />
           <ScoreCard label="Lighting" value={lightingScore} dim={lightingScore < 70} />
         </View>
 
-        {/* Trend line — only shown on fresh captures */}
-        {fromCapture && (
-          <TrendLine trend={trend} />
-        )}
-
-        {/* Coaching tip */}
         <View style={styles.tipCard}>
-          <Text style={styles.tipLabel}>Coach</Text>
+          <Text style={styles.tipLabel}>coach</Text>
           <Text style={styles.tipText}>{params.tip}</Text>
         </View>
 
-        {/* Buttons — differ based on where we came from */}
         {fromCapture ? (
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -81,22 +73,20 @@ export default function ResultsScreen() {
             >
               <Text style={styles.secondaryLabel}>Retake</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() => router.replace('/(tabs)')}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <Text style={styles.primaryLabel}>Done</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          // Came from history — just go back
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() => router.back()}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <Text style={styles.primaryLabel}>Back</Text>
             </TouchableOpacity>
@@ -108,7 +98,6 @@ export default function ResultsScreen() {
   );
 }
 
-// Shows "+5 vs last session", "-3 vs last session", or "First session"
 function TrendLine({ trend }: { trend: number | null }) {
   if (trend === null) {
     return (
@@ -117,7 +106,6 @@ function TrendLine({ trend }: { trend: number | null }) {
       </View>
     );
   }
-
   const isUp = trend > 0;
   const isDown = trend < 0;
   const sign = isUp ? '+' : '';
@@ -126,36 +114,16 @@ function TrendLine({ trend }: { trend: number | null }) {
 
   return (
     <View style={trendStyles.row}>
-      <Text style={textStyle}>
-        {arrow}  {sign}{trend} vs last session
-      </Text>
+      <Text style={textStyle}>{arrow}  {sign}{trend} vs last session</Text>
     </View>
   );
 }
 
 const trendStyles = StyleSheet.create({
-  row: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  up: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#34C759',
-    letterSpacing: 0.2,
-  },
-  down: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FF6B6B',
-    letterSpacing: 0.2,
-  },
-  neutral: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#636366',
-    letterSpacing: 0.2,
-  },
+  row: { paddingHorizontal: 20, paddingTop: 14 },
+  up: { fontSize: 14, fontWeight: '600', color: '#4CAF50', letterSpacing: 0.2 },
+  down: { fontSize: 14, fontWeight: '600', color: '#FF4040', letterSpacing: 0.2 },
+  neutral: { fontSize: 14, fontWeight: '500', color: '#555', letterSpacing: 0.2 },
 });
 
 function ScoreCard({ label, value, dim = false }: { label: string; value: number; dim?: boolean }) {
@@ -168,111 +136,122 @@ function ScoreCard({ label, value, dim = false }: { label: string; value: number
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  scroll: {
-    paddingBottom: 32,
-  },
+  safeArea: { flex: 1, backgroundColor: '#000' },
+  scroll: { paddingBottom: 44 },
 
-  // Header
   header: {
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 20,
+    paddingBottom: 4,
   },
-  titleRow: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: 12,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
+  eyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#444',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  statusLine: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.5,
+    lineHeight: 28,
   },
   savedBadge: {
-    backgroundColor: 'rgba(52,199,89,0.15)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(76,175,80,0.1)',
+    borderRadius: 100,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderWidth: 1,
-    borderColor: 'rgba(52,199,89,0.3)',
+    borderColor: 'rgba(76,175,80,0.25)',
+    marginTop: 2,
   },
   savedText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#34C759',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#8E8E93',
-    marginTop: 6,
+    color: '#4CAF50',
   },
 
-  // Image
+  heroScore: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  heroScoreValue: {
+    fontSize: 88,
+    fontWeight: '800',
+    color: ACCENT,
+    lineHeight: 92,
+    letterSpacing: -4,
+  },
+  heroScoreLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,184,0,0.45)',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginTop: 4,
+  },
+
   image: {
     marginHorizontal: 16,
-    height: 340,
-    borderRadius: 24,
-    backgroundColor: '#0D0D0D',
+    height: 380,
+    borderRadius: 28,
+    backgroundColor: '#111',
   },
 
-  // Score row
   scoreRow: {
     flexDirection: 'row',
     gap: 10,
     paddingHorizontal: 16,
-    marginTop: 16,
+    marginTop: 14,
   },
   scoreCard: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#141414',
-    borderRadius: 16,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: '#111',
+    borderRadius: 20,
+    paddingVertical: 18,
   },
   scoreCardDim: {
-    borderColor: 'rgba(255,59,48,0.25)',
+    backgroundColor: 'rgba(255,64,64,0.07)',
   },
   scoreCardLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#636366',
+    color: '#444',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     marginBottom: 6,
   },
   scoreCardValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#FFF',
   },
   scoreCardValueDim: {
-    color: '#FF6B6B',
+    color: '#FF4040',
   },
 
-  // Tip card
   tipCard: {
     marginHorizontal: 16,
     marginTop: 12,
-    backgroundColor: '#141414',
-    borderRadius: 20,
+    backgroundColor: '#111',
+    borderRadius: 24,
     paddingHorizontal: 24,
     paddingVertical: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
   },
   tipLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    color: '#636366',
+    color: '#444',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: 10,
@@ -280,11 +259,10 @@ const styles = StyleSheet.create({
   tipText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFF',
     lineHeight: 28,
   },
 
-  // Buttons
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
@@ -294,27 +272,25 @@ const styles = StyleSheet.create({
   secondaryButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 15,
-    borderRadius: 16,
-    backgroundColor: '#1C1C1E',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 17,
+    borderRadius: 100,
+    backgroundColor: '#111',
   },
   secondaryLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFF',
   },
   primaryButton: {
     flex: 2,
     alignItems: 'center',
-    paddingVertical: 15,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 17,
+    borderRadius: 100,
+    backgroundColor: '#FFF',
   },
   primaryLabel: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#000000',
+    color: '#000',
   },
 });

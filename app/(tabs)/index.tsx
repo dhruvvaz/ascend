@@ -6,11 +6,12 @@ import { useFocusEffect } from 'expo-router';
 
 import { getSessions, computeStreak } from '@/storage/sessions';
 
+const ACCENT = '#FFB800';
+
 export default function HomeScreen() {
   const router = useRouter();
   const [streak, setStreak] = useState(0);
 
-  // Reload streak every time this tab is focused
   useFocusEffect(
     useCallback(() => {
       getSessions().then((sessions) => setStreak(computeStreak(sessions)));
@@ -20,16 +21,14 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.screen}>
-        <View style={styles.hero}>
-          <Text style={styles.appName}>Ascend</Text>
-          <Text style={styles.tagline}>Your daily glow-up check-in</Text>
+        <Text style={styles.wordmark}>ascend</Text>
 
-          {/* Streak badge — hidden until the user has at least 1 session */}
+        <View style={styles.hero}>
+          <Text style={styles.heading}>How do you{'\n'}show up{'\n'}today?</Text>
           {streak > 0 && (
             <View style={styles.streakBadge}>
-              <Text style={styles.streakFlame}>🔥</Text>
               <Text style={styles.streakText}>
-                {streak} day{streak === 1 ? '' : 's'} streak
+                🔥 {streak} day{streak === 1 ? '' : 's'} streak
               </Text>
             </View>
           )}
@@ -38,9 +37,9 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.button}
           onPress={() => router.push('/(tabs)/coach')}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Text style={styles.buttonText}>Start Session</Text>
+          <Text style={styles.buttonText}>Start Check-in</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -50,65 +49,57 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#000',
   },
   screen: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingBottom: 48,
-    paddingTop: 80,
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 44,
+  },
+  wordmark: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444',
+    letterSpacing: 4,
+    textTransform: 'uppercase',
   },
   hero: {
-    alignItems: 'center',
-    gap: 12,
+    flex: 1,
+    justifyContent: 'center',
+    gap: 28,
   },
-  appName: {
-    fontSize: 48,
+  heading: {
+    fontSize: 56,
     fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 2,
+    color: '#FFF',
+    letterSpacing: -1.5,
+    lineHeight: 62,
   },
-  tagline: {
-    fontSize: 16,
-    color: '#8E8E93',
-    letterSpacing: 0.5,
-  },
-
-  // Streak
   streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    backgroundColor: 'rgba(255,149,0,0.12)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,184,0,0.1)',
+    borderRadius: 100,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
     borderWidth: 1,
-    borderColor: 'rgba(255,149,0,0.25)',
-  },
-  streakFlame: {
-    fontSize: 16,
+    borderColor: 'rgba(255,184,0,0.2)',
   },
   streakText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FF9500',
-    letterSpacing: 0.3,
+    color: ACCENT,
   },
-
-  // CTA
   button: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 18,
+    backgroundColor: '#FFF',
+    borderRadius: 100,
+    paddingVertical: 20,
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#000000',
-    letterSpacing: 0.5,
+    color: '#000',
+    letterSpacing: 0.2,
   },
 });

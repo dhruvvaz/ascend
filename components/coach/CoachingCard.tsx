@@ -1,13 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-type CoachingCardProps = {
-  tip: string;
-};
+type CoachingCardProps = { tip: string };
 
 export function CoachingCard({ tip }: CoachingCardProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Coach</Text>
+      <Text style={styles.label}>coach</Text>
       <Text style={styles.tip}>{tip}</Text>
     </View>
   );
@@ -15,27 +13,25 @@ export function CoachingCard({ tip }: CoachingCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 20,
-    paddingHorizontal: 28,
-    paddingVertical: 24,
+    backgroundColor: '#111',
+    borderRadius: 22,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     marginHorizontal: 16,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 14,
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: '#444',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   tip: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
-    lineHeight: 28,
+    color: '#FFF',
+    lineHeight: 26,
   },
 });

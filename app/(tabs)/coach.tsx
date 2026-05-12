@@ -10,17 +10,13 @@ import { presets, PresetName } from '@/engine/mockMetrics';
 import { getCoachingTip, getStatusLine } from '@/engine/rules';
 import { getSessions, saveSession } from '@/storage/sessions';
 
+const ACCENT = '#FFB800';
+
 const PRESET_BUTTONS: { label: string; key: PresetName }[] = [
   { label: 'Posture', key: 'postureLow' },
   { label: 'Lighting', key: 'lightingLow' },
   { label: 'Strong', key: 'strongLook' },
 ];
-
-const CAMERA_LABELS: Record<PresetName, string> = {
-  postureLow: 'Posture Check',
-  lightingLow: 'Lighting Check',
-  strongLook: 'Strong Look',
-};
 
 export default function CoachScreen() {
   const [activePreset, setActivePreset] = useState<PresetName>('postureLow');
@@ -37,13 +33,10 @@ export default function CoachScreen() {
     setIsCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-
-      // Read previous sessions BEFORE saving so we can compare scores
       const previousSessions = await getSessions();
       const prevScore = previousSessions[0]?.presenceScore ?? null;
       const trend = prevScore !== null ? metrics.presenceScore - prevScore : null;
 
-      // Persist the session locally before navigating
       await saveSession({
         id: Date.now().toString(),
         timestamp: Date.now(),
@@ -66,7 +59,6 @@ export default function CoachScreen() {
           tip: coachingTip,
           statusLine,
           source: 'capture',
-          // trend is a signed number string ("5", "-3", "0") or "" for first session
           trend: trend !== null ? String(trend) : '',
         },
       });
@@ -78,31 +70,18 @@ export default function CoachScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.screen}>
+        <Header score={metrics.presenceScore} />
+        <Text style={styles.statusLine}>{statusLine}</Text>
 
-        {/* Header + status line */}
-        <View>
-          <Header score={metrics.presenceScore} />
-          <Text style={styles.statusLine}>{statusLine}</Text>
-        </View>
-
-        {/* Camera area */}
         <View style={styles.cameraArea}>
           {permission?.granted ? (
-            // Camera is allowed — show the live feed with overlays on top
             <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front">
-              {/* Live badge */}
               <View style={styles.liveBadge}>
                 <View style={styles.liveDot} />
                 <Text style={styles.liveText}>LIVE</Text>
               </View>
-
-              {/* Centered preset label */}
-              <View style={styles.cameraLabelContainer}>
-                <Text style={styles.cameraLabel}>{CAMERA_LABELS[activePreset]}</Text>
-              </View>
             </CameraView>
           ) : (
-            // Permission not granted yet — show a prompt inside the camera area
             <CameraPermissionPrompt
               canAskAgain={permission?.canAskAgain ?? true}
               onRequest={requestPermission}
@@ -110,16 +89,13 @@ export default function CoachScreen() {
           )}
         </View>
 
-        {/* Metric row */}
         <View style={styles.metricRow}>
           <MetricPill label="Posture" value={metrics.postureScore} dim={metrics.postureScore < 70} />
           <MetricPill label="Lighting" value={metrics.lightingScore} dim={metrics.lightingScore < 70} />
         </View>
 
-        {/* Coaching card */}
         <CoachingCard tip={coachingTip} />
 
-        {/* Preset switcher */}
         <View style={styles.presetRow}>
           {PRESET_BUTTONS.map(({ label, key }) => (
             <TouchableOpacity
@@ -135,24 +111,21 @@ export default function CoachScreen() {
           ))}
         </View>
 
-        {/* Capture button */}
         <TouchableOpacity
           style={[styles.captureButton, (!permission?.granted || isCapturing) && styles.captureButtonDisabled]}
           onPress={handleCapture}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           disabled={!permission?.granted || isCapturing}
         >
-          <Text style={styles.captureLabel}>
-            {isCapturing ? 'Capturing…' : 'Capture Frame'}
+          <Text style={[styles.captureLabel, (!permission?.granted || isCapturing) && styles.captureLabelDisabled]}>
+            {isCapturing ? 'Capturing…' : 'Capture'}
           </Text>
         </TouchableOpacity>
-
       </View>
     </SafeAreaView>
   );
 }
 
-// Shown inside the camera area when the user has not granted permission
 function CameraPermissionPrompt({
   canAskAgain,
   onRequest,
@@ -174,7 +147,7 @@ function CameraPermissionPrompt({
         </>
       ) : (
         <Text style={styles.permissionBody}>
-          Camera access was denied. Enable it in your device Settings to use Live Coach.
+          Camera access was denied. Enable it in your device Settings.
         </Text>
       )}
     </View>
@@ -191,34 +164,23 @@ function MetricPill({ label, value, dim }: { label: string; value: number; dim: 
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  screen: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
+  safeArea: { flex: 1, backgroundColor: '#000' },
+  screen: { flex: 1, justifyContent: 'space-between' },
 
-  // Status line
   statusLine: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
-    color: '#8E8E93',
-    letterSpacing: 0.3,
+    color: '#555',
     paddingHorizontal: 24,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
 
-  // Camera area
   cameraArea: {
     flex: 1,
     marginHorizontal: 16,
-    borderRadius: 24,
-    backgroundColor: '#0D0D0D',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
-    overflow: 'hidden',  // clips the CameraView to the rounded corners
+    borderRadius: 28,
+    backgroundColor: '#111',
+    overflow: 'hidden',
   },
   liveBadge: {
     position: 'absolute',
@@ -227,12 +189,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   liveDot: {
     width: 6,
@@ -243,22 +203,10 @@ const styles = StyleSheet.create({
   liveText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#FFF',
     letterSpacing: 1.5,
   },
-  cameraLabelContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.30)',
-    letterSpacing: 1,
-  },
 
-  // Permission prompt
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -268,112 +216,106 @@ const styles = StyleSheet.create({
   },
   permissionTitle: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: '#FFF',
     textAlign: 'center',
   },
   permissionBody: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#555',
     textAlign: 'center',
     lineHeight: 20,
   },
   permissionButton: {
     marginTop: 4,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: '#FFF',
+    borderRadius: 100,
     paddingHorizontal: 28,
     paddingVertical: 12,
   },
   permissionButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: '#000',
   },
 
-  // Metric row
   metricRow: {
     flexDirection: 'row',
     gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 12,
   },
   pill: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: '#141414',
-    borderRadius: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: '#111',
+    borderRadius: 18,
+    paddingVertical: 16,
   },
   pillDim: {
-    borderColor: 'rgba(255,59,48,0.25)',
+    backgroundColor: 'rgba(255,59,48,0.07)',
   },
   pillLabel: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#636366',
+    color: '#444',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
-    marginBottom: 5,
+    marginBottom: 4,
   },
   pillValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFF',
   },
   pillValueDim: {
-    color: '#FF6B6B',
+    color: '#FF4040',
   },
 
-  // Preset row
   presetRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     paddingHorizontal: 16,
-    paddingBottom: 20,
     paddingTop: 4,
+    paddingBottom: 12,
   },
   presetButton: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 11,
-    borderRadius: 14,
-    backgroundColor: '#141414',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 100,
+    backgroundColor: '#111',
   },
   presetButtonActive: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
+    backgroundColor: ACCENT,
   },
   presetLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#636366',
-    letterSpacing: 0.2,
+    color: '#444',
   },
   presetLabelActive: {
-    color: '#000000',
+    color: '#000',
   },
 
-  // Capture button
   captureButton: {
     marginHorizontal: 16,
-    marginBottom: 24,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    paddingVertical: 19,
+    borderRadius: 100,
+    backgroundColor: '#FFF',
     alignItems: 'center',
   },
   captureButtonDisabled: {
-    backgroundColor: '#2C2C2E',
+    backgroundColor: '#1A1A1A',
   },
   captureLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#000000',
+    color: '#000',
     letterSpacing: 0.2,
+  },
+  captureLabelDisabled: {
+    color: '#444',
   },
 });

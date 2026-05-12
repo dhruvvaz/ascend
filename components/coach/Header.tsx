@@ -1,23 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-type HeaderProps = {
-  score: number;
-};
+const ACCENT = '#FFB800';
+
+type HeaderProps = { score: number };
 
 export function Header({ score }: HeaderProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.appName}>Ascend</Text>
-      <ScoreBadge score={score} />
-    </View>
-  );
-}
-
-function ScoreBadge({ score }: { score: number }) {
-  return (
-    <View style={styles.badge}>
-      <Text style={styles.badgeLabel}>Presence Score</Text>
-      <Text style={styles.badgeScore}>{score}</Text>
+      <Text style={styles.wordmark}>ascend</Text>
+      <View style={styles.badge}>
+        <Text style={styles.badgeScore}>{score}</Text>
+        <Text style={styles.badgeLabel}>presence</Text>
+      </View>
     </View>
   );
 }
@@ -28,31 +22,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 14,
   },
-  appName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 1,
+  wordmark: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#444',
+    letterSpacing: 4,
+    textTransform: 'uppercase',
   },
   badge: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,184,0,0.1)',
+    borderRadius: 14,
+    paddingHorizontal: 18,
     paddingVertical: 8,
-  },
-  badgeLabel: {
-    fontSize: 10,
-    color: '#A0A0A0',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,184,0,0.2)',
   },
   badgeScore: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    lineHeight: 28,
+    fontSize: 28,
+    fontWeight: '800',
+    color: ACCENT,
+    lineHeight: 32,
+  },
+  badgeLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: 'rgba(255,184,0,0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
 });
